@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kyshti — permanent link</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0e1117;color:#e6edf3;display:flex;min-height:100vh;margin:0;align-items:center;justify-content:center}
+.box{max-width:560px;padding:2rem;text-align:center}
+h1{font-size:1.3rem;margin:0 0 .5rem}
+p{line-height:1.55;color:#9aa4b2;margin:.4rem 0}
+a{color:#58a6ff}
+.dot{display:inline-block;width:.55em;height:.55em;border-radius:50%;background:#3fb950;margin-right:.4em;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.url{font-family:ui-monospace,monospace;font-size:.85rem;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:.6rem .8rem;word-break:break-all;margin:1rem 0}
+.bar{height:4px;border-radius:2px;background:#30363d;overflow:hidden;margin:1.2rem 0}
+.bar i{display:block;height:100%;width:40%;background:#3fb950;animation:slide 1.1s linear infinite}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>&#127968; Tursene na kyshti — permanent link</h1>
+<p><span class="dot"></span>svarzvam kym zhiviya tunel...</p>
+<p class="url" id="target">...</p>
+<div class="bar"><i></i></div>
+<p id="msg">Tyrsya aktivniya tunel (avto-opit na vseki 10 sek).</p>
+<p class="hidden" id="alt">Mezhduvremennno: <a id="altlink">LAN adres</a> (samo ot vkushti)</p>
+<p class="hidden" id="stale">&#9888; Nyama vidyan zhiv tunel ot 24 chasa — mozhe problem sys survura.</p>
+</div>
+<script>
+var RETRY_MS = 10000;
+function q(id){return document.getElementById(id);}
+function go(){
+  fetch('tunnel.json', {cache: 'no-store'})
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){
+      var url = (d.url || '').replace(/\/$/, '');
+      if (!url) { q('msg').textContent = 'tunnel.json: nyama url'; setTimeout(go, RETRY_MS); return; }
+      q('target').textContent = url;
+      q('altlink').href = d.lan || '';
+      q('altlink').textContent = d.lan || '';
+      q('alt').classList.remove('hidden');
+      var ageH = (Date.now()/1000 - (d.seen_ts || 0)) / 3600;
+      if (ageH > 24) { q('stale').classList.remove('hidden'); }
+      fetch(url + '/healthz', {mode: 'no-cors', cache: 'no-store'})
+        .then(function(){ location.replace(url); })
+        .catch(function(){ q('msg').textContent = 'tunelut ne otgovarya — shtat opit chrez 10 sek'; setTimeout(go, RETRY_MS); });
+    })
+    .catch(function(){ q('msg').textContent = 'tunnel.json fetch fail — otnovo chrez 10 sek'; setTimeout(go, RETRY_MS); });
+}
+go();
+</script>
+</body>
+</html>
